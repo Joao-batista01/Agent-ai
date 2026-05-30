@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import requests
@@ -9,6 +8,21 @@ import requests
 st.set_page_config(page_title="Agente de Futebol", page_icon="⚽")
 
 st.title("⚽ Agente de IA - Premier League")
+
+st.write("Faça perguntas sobre jogadores da Premier League.")
+
+# =========================
+# BOTÃO LIMPAR CONVERSA
+# =========================
+if st.button("🗑 Limpar conversa"):
+    st.session_state.mensagens = []
+    st.rerun()
+
+# =========================
+# HISTÓRICO DE CHAT
+# =========================
+if "mensagens" not in st.session_state:
+    st.session_state.mensagens = []
 
 # =========================
 # CARREGAR DATASET
@@ -34,33 +48,46 @@ colunas = [
 df = df[colunas]
 
 # =========================
-# ENCONTRAR JOGADOR
+# ENCONTRAR JOGADORES
 # =========================
-def encontrar_jogador(pergunta):
+def encontrar_jogadores(pergunta):
+
     pergunta = pergunta.lower()
 
-    for nome in df["Name"]:
-        if nome.lower() in pergunta:
-            return nome
+    jogadores_encontrados = []
 
-    return None
+    for nome in df["Name"]:
+
+        partes_nome = nome.lower().split()
+
+        for parte in partes_nome:
+
+            if len(parte) > 2 and parte in pergunta:
+
+                if nome not in jogadores_encontrados:
+                    jogadores_encontrados.append(nome)
+
+    return jogadores_encontrados
 
 # =========================
-# FUNÇÃO DO AGENTE
+# FUNÇÃO PRINCIPAL
 # =========================
 def perguntar(pergunta):
 
-    jogador = encontrar_jogador(pergunta)
+    jogadores = encontrar_jogadores(pergunta)
 
-    if not jogador:
-        return "❌ Jogador não encontrado no dataset."
-
-    filtro = df[df["Name"] == jogador].head(1)
+    if len(jogadores) == 0:
+        return "❌ Nenhum jogador encontrado no dataset."
 
     contexto = ""
 
-    for _, row in filtro.iterrows():
-        contexto += f"""
+    for jogador in jogadores:
+
+        filtro = df[df["Name"] == jogador].head(1)
+
+        for _, row in filtro.iterrows():
+
+            contexto += f"""
 Player: {row['Name']}
 Club: {row['Club']}
 Position: {row['Position']}
@@ -78,7 +105,7 @@ Red cards: {row['Red cards']}
 """
 
     prompt = f"""
-Você é um assistente especialista em jogadores da Premier League.
+Você é um especialista em jogadores da Premier League.
 
 Use apenas os dados abaixo para responder.
 
@@ -86,36 +113,69 @@ Use apenas os dados abaixo para responder.
 
 Pergunta: {pergunta}
 
-Responda usando os dados fornecidos.
-Seja claro e direto.
+Se for uma comparação:
+- compare os jogadores corretamente
+- diga quem tem melhores números
+
+Seja claro, direto e objetivo.
 Se a informação não estiver disponível, diga isso.
 """
 
-    response = requests.post(
-        "http://localhost:11434/api/generate",
-        json={
-            "model": "llama3",
-            "prompt": prompt,
-            "stream": False
-        },
-        timeout=60
-    )
-
     try:
-        return response.json().get("response", "Erro na resposta")
-    except:
-        return "Erro ao processar resposta"
 
+        response = requests.post(
+            "http://localhost:11434/api/generate",
+            json={
+                "model": "llama3",
+                "prompt": prompt,
+                "stream": False
+            },
+            timeout=60
+        )
+
+        data = response.json()
+
+        return data.get("response", "❌ Erro na resposta do modelo.")
+
+    except Exception as e:
+        return f"❌ Erro: {e}"
 
 # =========================
-# INTERFACE
+# MOSTRAR HISTÓRICO
 # =========================
-pergunta = st.text_input("Faça sua pergunta sobre um jogador:")
+for mensagem in st.session_state.mensagens:
 
-if st.button("Perguntar"):
-    if pergunta:
+    with st.chat_message(mensagem["role"]):
+        st.markdown(mensagem["content"])
+
+# =========================
+# INPUT DO USUÁRIO
+# =========================
+pergunta = st.chat_input("Digite sua pergunta...")
+
+if pergunta:
+
+    # salvar pergunta
+    st.session_state.mensagens.append({
+        "role": "user",
+        "content": pergunta
+    })
+
+    # mostrar pergunta
+    with st.chat_message("user"):
+        st.markdown(pergunta)
+
+    # gerar resposta
+    with st.chat_message("assistant"):
+
         with st.spinner("Pensando..."):
+
             resposta = perguntar(pergunta)
-        st.success(resposta)
-    else:
-        st.warning("Digite uma pergunta primeiro.")
+
+            st.markdown(resposta)
+
+    # salvar resposta
+    st.session_state.mensagens.append({
+        "role": "assistant",
+        "content": resposta
+    })
