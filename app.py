@@ -2,31 +2,31 @@ import streamlit as st
 import pandas as pd
 import requests
 
-# =========================
+
 # CONFIG
-# =========================
+
 st.set_page_config(page_title="Agente de Futebol", page_icon="⚽")
 
 st.title("⚽ Agente de IA - Premier League")
 
 st.write("Faça perguntas sobre jogadores da Premier League.")
 
-# =========================
+
 # BOTÃO LIMPAR CONVERSA
-# =========================
+
 if st.button("🗑 Limpar conversa"):
     st.session_state.mensagens = []
     st.rerun()
 
-# =========================
+
 # HISTÓRICO DE CHAT
-# =========================
+
 if "mensagens" not in st.session_state:
     st.session_state.mensagens = []
 
-# =========================
+
 # CARREGAR DATASET
-# =========================
+
 df = pd.read_csv("dataset - 2020-09-24.csv", on_bad_lines='skip')
 
 colunas = [
@@ -47,9 +47,9 @@ colunas = [
 
 df = df[colunas]
 
-# =========================
+
 # ENCONTRAR JOGADORES
-# =========================
+
 def encontrar_jogadores(pergunta):
 
     pergunta = pergunta.lower()
@@ -69,9 +69,9 @@ def encontrar_jogadores(pergunta):
 
     return jogadores_encontrados
 
-# =========================
+
 # FUNÇÃO PRINCIPAL
-# =========================
+
 def perguntar(pergunta):
 
     jogadores = encontrar_jogadores(pergunta)
@@ -140,17 +140,17 @@ Se a informação não estiver disponível, diga isso.
     except Exception as e:
         return f"❌ Erro: {e}"
 
-# =========================
+
 # MOSTRAR HISTÓRICO
-# =========================
+
 for mensagem in st.session_state.mensagens:
 
     with st.chat_message(mensagem["role"]):
         st.markdown(mensagem["content"])
 
-# =========================
+
 # INPUT DO USUÁRIO
-# =========================
+
 pergunta = st.chat_input("Digite sua pergunta...")
 
 if pergunta:
