@@ -45,10 +45,10 @@ Principais dados:
 
 # Aluno
 
-Nome: João Batista de Lima Pimentel
-Curso: Ciência da Computação
-Matrícula: 01697762
-Disciplina: Inteligência Artificial
-Instituição: Uninassau Paulista
+Nome: João Batista de Lima Pimentel  
+Curso: Ciência da Computação  
+Matrícula: 01697762  
+Disciplina: Inteligência Artificial  
+Instituição: Uninassau Paulista  
 
 
